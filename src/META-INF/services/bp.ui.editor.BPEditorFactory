@@ -1,0 +1,2 @@
+bp.ui.editor.BPEditorFactorySQL
+bp.ui.editor.BPEditorFactoryJDBCLink
