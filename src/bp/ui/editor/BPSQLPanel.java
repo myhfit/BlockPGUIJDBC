@@ -90,6 +90,7 @@ public class BPSQLPanel extends BPCodePanel
 
 		m_sp.togglePanel(false);
 		initActions();
+		initListeners();
 	}
 
 	protected void onChangeDS(BPResourceJDBCLink jdbclink)

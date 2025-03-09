@@ -1,6 +1,9 @@
 package bp.ui.editor;
 
 import bp.config.BPConfig;
+import bp.config.BPSetting;
+import bp.config.BPSettingBase;
+import bp.config.BPSettingItem;
 import bp.data.BPTextContainer;
 import bp.data.BPTextContainerBase;
 import bp.format.BPFormat;
@@ -8,6 +11,8 @@ import bp.format.BPFormatSQL;
 import bp.res.BPResource;
 import bp.res.BPResourceFileSystem;
 import bp.res.BPResourceJDBCLink;
+import bp.util.LogicUtil;
+import bp.util.TextUtil;
 
 public class BPEditorFactorySQL implements BPEditorFactory
 {
@@ -29,6 +34,8 @@ public class BPEditorFactorySQL implements BPEditorFactory
 		if (res.isFileSystem() && ((BPResourceFileSystem) res).isFile())
 		{
 			BPTextContainer con = new BPTextContainerBase();
+			if (options != null)
+				LogicUtil.VLF(((String) options.get("encoding")), TextUtil::checkNotEmpty, con::setEncoding);
 			con.bind(res);
 			((BPSQLPanel) editor).bind(con, ((BPResourceFileSystem) res).getTempID() != null);
 			if (options != null)
@@ -38,6 +45,13 @@ public class BPEditorFactorySQL implements BPEditorFactory
 					((BPSQLPanel) editor).getTextPanel().setText(dv);
 			}
 		}
+	}
+
+	public BPSetting getSetting(String formatkey)
+	{
+		BPSettingBase rc = new BPSettingBase();
+		rc.addItem(BPSettingItem.create("encoding", "Encoding", BPSettingItem.ITEM_TYPE_TEXT, null));
+		return rc;
 	}
 
 	public String getName()

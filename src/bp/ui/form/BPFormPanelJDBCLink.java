@@ -12,7 +12,7 @@ import bp.ui.scomp.BPTextField;
 import bp.ui.scomp.BPTextFieldPane;
 import bp.util.ClassUtil;
 
-public class BPFormPanelJDBCLink extends BPFormPanelFileSystem
+public class BPFormPanelJDBCLink extends BPFormPanelResourceBase
 {
 	/**
 	 * 
@@ -78,6 +78,7 @@ public class BPFormPanelJDBCLink extends BPFormPanelFileSystem
 
 	public void showData(Map<String, ?> data, boolean editable)
 	{
+		super.showData(data, editable);
 		setComponentValue(m_txtname, data, "name", editable);
 		setComponentValue(m_txtdriver, data, "driver", editable);
 		setComponentValue(m_txturl, data, "url", editable);
