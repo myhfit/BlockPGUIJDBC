@@ -34,6 +34,7 @@ import bp.ui.scomp.BPTextPane;
 import bp.ui.util.CommonUIOperations;
 import bp.ui.util.UIStd;
 import bp.ui.util.UIUtil;
+import bp.util.JSONUtil;
 
 public class BPSQLPanel extends BPCodePanel
 {
@@ -158,6 +159,84 @@ public class BPSQLPanel extends BPCodePanel
 		{
 			BPResourceJDBCLink jdbclink = BPResourceJDBCLink.readLink((BPResourceFile) res);
 			onChangeDS(jdbclink);
+		}
+	}
+
+	public void runWithParams()
+	{
+		String pstr = UIStd.input("", "Parameters(JSON)", BPGUICore.S_BP_TITLE);
+		if (pstr == null)
+			return;
+		List<Object> plist = JSONUtil.decode(pstr);
+		if (plist == null)
+		{
+			UIStd.info("Parse JSON failed");
+			return;
+		}
+		checkContext();
+		if (m_context == null)
+			return;
+		String sql = m_txt.getSelectedText();
+		if (sql == null || sql.length() == 0)
+		{
+			sql = m_txt.getText();
+		}
+		if (sql != null)
+		{
+			sql = sql.trim();
+			if (sql.length() > 0)
+			{
+				SQLCMDTYPE ct = SQLCMDTYPE.find(sql);
+				if (ct == null)
+				{
+					List<String> rct = new ArrayList<String>();
+					rct.add("Query");
+					rct.add("Execute");
+					String s = UIStd.select(rct, "Select Command Type", null);
+					if ("Execute".equals(s))
+					{
+						ct = SQLCMDTYPE.EXECUTE;
+					}
+					else if ("Query".equals(s))
+					{
+						ct = SQLCMDTYPE.QUERY;
+					}
+				}
+				if (ct != null)
+				{
+					switch (ct)
+					{
+						case QUERY:
+						{
+							m_context.startQuery(sql, plist.toArray(new Object[plist.size()]), m_setupqueryfunc).whenComplete(this::onQueried);
+							setStatusInfo("Query Started ...");
+							break;
+						}
+						case EXECUTE:
+						case CONTROL:
+						case DEFINITION:
+						{
+							m_context.execute(sql, plist.toArray(new Object[plist.size()])).whenComplete(this::onExecuted);
+							setStatusInfo("Execute Started ...");
+							break;
+						}
+						case COMMIT:
+						{
+							commit();
+							break;
+						}
+						case ROLLBACK:
+						{
+							rollback();
+							break;
+						}
+						default:
+						{
+
+						}
+					}
+				}
+			}
 		}
 	}
 

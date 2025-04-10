@@ -79,7 +79,6 @@ public class BPSQLResultPane extends JPanel
 
 		m_lbllinkname.setLabelFont();
 		m_lbllinkname.setFloatLabel();
-		m_toolbar.setBarHeight(18);
 		m_scroll.setBorder(new MatteBorder(1, 0, 0, 0, UIConfigs.COLOR_STRONGBORDER()));
 
 		setLayout(new BorderLayout());

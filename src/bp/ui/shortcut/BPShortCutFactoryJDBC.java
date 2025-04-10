@@ -6,7 +6,7 @@ public class BPShortCutFactoryJDBC implements BPShortCutFactory
 {
 	public void register(BiConsumer<String, BPShortCutFactory> regfunc)
 	{
-		regfunc.accept("SQL Panel", this);
+		regfunc.accept(BPShortCutSQLPanel.SCKEY_SQLPANEL, this);
 	}
 
 	public BPShortCut createShortCut(String key)
@@ -14,7 +14,7 @@ public class BPShortCutFactoryJDBC implements BPShortCutFactory
 		BPShortCut rc = null;
 		switch (key)
 		{
-			case "SQL Panel":
+			case BPShortCutSQLPanel.SCKEY_SQLPANEL:
 			{
 				rc = new BPShortCutSQLPanel();
 				break;
