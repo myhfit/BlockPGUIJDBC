@@ -10,23 +10,36 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import javax.swing.Action;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 
 import bp.BPGUICore;
+import bp.config.BPSetting;
 import bp.config.UIConfigs;
 import bp.data.BPXData;
 import bp.data.BPXYDData;
 import bp.data.BPXYData;
+import bp.format.BPFormatSQL;
+import bp.format.BPFormatText;
+import bp.format.BPFormatXYData;
 import bp.jdbc.BPJDBCContext;
 import bp.jdbc.BPJDBCContextBase;
+import bp.processor.BPDataProcessor;
+import bp.processor.BPDataProcessorManager;
+import bp.processor.BPResourceProcessor;
 import bp.res.BPResource;
+import bp.res.BPResourceByteArray;
 import bp.res.BPResourceFile;
+import bp.res.BPResourceHolder;
 import bp.res.BPResourceJDBCLink;
+import bp.ui.actions.BPAction;
 import bp.ui.actions.BPSQLActions;
 import bp.ui.container.BPEditors.BPEventUIEditors;
+import bp.ui.dialog.BPDialogCommon;
+import bp.ui.dialog.BPDialogSetting;
 import bp.ui.scomp.BPSQLPane;
 import bp.ui.scomp.BPSQLResultPane;
 import bp.ui.scomp.BPSplitPane;
@@ -35,6 +48,8 @@ import bp.ui.util.CommonUIOperations;
 import bp.ui.util.UIStd;
 import bp.ui.util.UIUtil;
 import bp.util.JSONUtil;
+import bp.util.ObjUtil;
+import bp.util.TextUtil;
 
 public class BPSQLPanel extends BPCodePanel
 {
@@ -94,6 +109,103 @@ public class BPSQLPanel extends BPCodePanel
 		initListeners();
 	}
 
+	protected void initActions()
+	{
+		super.initActions();
+		List<String> dbcats = new ArrayList<String>();
+		if (m_context != null)
+		{
+			BPResourceJDBCLink jdbclink = m_context.getJDBCLink();
+			String dbcstr = jdbclink.getDBCats();
+			if (dbcstr != null)
+			{
+				String[] dbcarr = dbcstr.split(",");
+				for (String dbc : dbcarr)
+				{
+					dbc = dbc.trim();
+					if (dbc.length() > 0)
+						dbcats.add(dbc);
+				}
+			}
+		}
+		Action[] actarr = m_acts;
+		List<Action> acts = ObjUtil.makeList((Object[]) actarr);
+		acts.add(BPAction.separator());
+		{
+			Action actsp = BPAction.build("SQL Processor").getAction();
+			List<Action> actsub = new ArrayList<Action>();
+			List<BPDataProcessor<?, ?>> ps = BPDataProcessorManager.getDataProcessors(BPFormatSQL.FORMAT_SQL);
+			for (String dbc : dbcats)
+				ps.addAll(BPDataProcessorManager.getDataProcessors(BPFormatSQL.FORMAT_SQL + ".dbcat=" + dbc));
+			for (BPDataProcessor<?, ?> p : ps)
+			{
+				if (p instanceof BPResourceProcessor)
+				{
+					String pname = p.getName();
+					Action actp = BPAction.build(p.getUILabel()).callback((e) -> callSQLResourceProcessor(pname)).getAction();
+					actsub.add(actp);
+				}
+			}
+			actsp.putValue(BPAction.SUB_ACTIONS, actsub.toArray(new Action[actsub.size()]));
+			acts.add(actsp);
+		}
+		m_acts = acts.toArray(new Action[0]);
+	}
+
+	protected void callSQLResourceProcessor(String pname)
+	{
+		String str;
+		// boolean issel;
+		if (m_txt.getSelectionEnd() == 0)
+		{
+			str = m_txt.getText();
+			// issel = false;
+		}
+		else
+		{
+			str = m_txt.getSelectedText();
+			// issel = true;
+		}
+		BPResourceHolder src = new BPResourceByteArray(TextUtil.fromString(str, "utf-8"), null, BPFormatText.FORMAT_TEXT, null, null, true);
+		str = null;
+		BPResourceHolder out = new BPResourceHolder.BPResourceHolderW(null, null, BPFormatXYData.FORMAT_XYDATA, null, null, true);
+		BPResourceProcessor<BPResource, BPResource> p = BPDataProcessorManager.getDataProcessorV(pname);
+		BPSetting setting = p.getSetting(null);
+		boolean outxy = p.canOutput(BPFormatXYData.FORMAT_XYDATA);
+		boolean outtext = p.canOutput(BPFormatText.FORMAT_TEXT);
+		if (setting != null)
+		{
+			if (outxy)
+			{
+				setting.set("OUTPUT", out);
+			}
+			if (p.needSettingUI())
+			{
+				BPDialogSetting dlg = new BPDialogSetting();
+				dlg.setSetting(setting);
+				dlg.setVisible(true);
+				if (dlg.getActionResult() != BPDialogCommon.COMMAND_OK)
+					return;
+				setting = dlg.getResult();
+			}
+			setting.set("jdbclink", m_context.getJDBCLink());
+		}
+		if (outxy)
+		{
+			out = (BPResourceHolder) p.process(src, setting);
+			if (out != null)
+				CommonUIOperations.openResourceNewWindow(out, new BPFormatXYData(), null, null, null);
+		}
+		else if (outtext)
+		{
+			out = (BPResourceHolder) p.process(src, setting);
+			String newtxt = out.getData();
+			UIStd.info(newtxt);
+		}
+		else
+			p.process(src, setting);
+	}
+
 	protected void onChangeDS(BPResourceJDBCLink jdbclink)
 	{
 		BPJDBCContext context = m_context;
@@ -110,6 +222,8 @@ public class BPSQLPanel extends BPCodePanel
 		m_result.setLinkName(link == null ? "" : link.getName());
 		m_context = link == null ? null : new BPJDBCContextBase(link);
 		m_context.open();
+
+		initActions();
 	}
 
 	public void connect()

@@ -23,6 +23,7 @@ public class BPFormPanelJDBCLink extends BPFormPanelResourceBase
 	protected BPTextField m_txturl;
 	protected BPTextField m_txtuser;
 	protected BPTextField m_txtpass;
+	protected BPTextField m_txtdbcats;
 
 	protected BPTextFieldPane m_pandriver;
 
@@ -33,6 +34,7 @@ public class BPFormPanelJDBCLink extends BPFormPanelResourceBase
 		rc.put("url", m_txturl.getNotEmptyText());
 		rc.put("user", m_txtuser.getNotEmptyText());
 		rc.put("password", m_txtpass.getNotEmptyText());
+		rc.put("dbcats", m_txtdbcats.getNotEmptyText());
 		return rc;
 	}
 
@@ -44,10 +46,12 @@ public class BPFormPanelJDBCLink extends BPFormPanelResourceBase
 		m_txturl = makeSingleLineTextField();
 		m_txtuser = makeSingleLineTextField();
 		m_txtpass = makeSingleLineTextField();
+		m_txtdbcats = makeSingleLineTextField();
 		addLine(new String[] { "Driver" }, new Component[] { m_pandriver }, () -> !m_txtdriver.isEmpty());
 		addLine(new String[] { "URL" }, new Component[] { m_txturl }, () -> !m_txturl.isEmpty());
 		addLine(new String[] { "Username" }, new Component[] { m_txtuser });
 		addLine(new String[] { "Password" }, new Component[] { m_txtpass });
+		addLine(new String[] { "DB Categories" }, new Component[] { m_txtdbcats });
 	}
 
 	protected String onShowDrivers(String old)
@@ -84,5 +88,6 @@ public class BPFormPanelJDBCLink extends BPFormPanelResourceBase
 		setComponentValue(m_txturl, data, "url", editable);
 		setComponentValue(m_txtuser, data, "user", editable);
 		setComponentValue(m_txtpass, data, "password", editable);
+		setComponentValue(m_txtdbcats, data, "dbcats", editable);
 	}
 }
