@@ -42,7 +42,7 @@ public class BPShortCutSQLPanel extends BPShortCutBase
 		}
 		BPResourceJDBCLink plink = link;
 		if (newwin || (!BPGUICore.execOnMainFrame(mf -> mf.isVisible())))
-			CommonUIOperations.openFileNewWindow(filename, "SQL", "SQL Editor", null, plink);
+			CommonUIOperations.createFileNewWindow(filename, "SQL", "SQL Editor", null, plink);
 		else
 			BPGUICore.runOnMainFrame(mf -> mf.createEditorByFileSystem(filename, "SQL", "SQL Editor", null, plink));
 		return true;

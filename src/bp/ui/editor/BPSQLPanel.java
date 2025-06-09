@@ -584,7 +584,7 @@ public class BPSQLPanel extends BPCodePanel
 
 	public enum SQLCMDTYPE
 	{
-		QUERY(1, new String[] { "SELECT", "PRAGMA" }), EXECUTE(1, new String[] { "INSERT", "UPDATE", "DELETE" }), COMMIT(1, new String[] { "COMMIT" }), ROLLBACK(1, new String[] { "ROLLBACK" }), SAVEPOINT(1, new String[] { "SAVEPOINT" }), CONTROL(1,
+		QUERY(1, new String[] { "SELECT", "PRAGMA" }), EXECUTE(1, new String[] { "INSERT", "UPDATE", "DELETE" }), COMMIT(2, new String[] { "COMMIT" }), ROLLBACK(2, new String[] { "ROLLBACK" }), SAVEPOINT(1, new String[] { "SAVEPOINT" }), CONTROL(1,
 				new String[] { "GRANT", "REVOKE" }), DEFINITION(1, new String[] { "CREATE", "ALTER", "DROP" }),
 		// CCL(1, new String[] {"DECLARE CURSOR","FETCH INTO",""})
 		;
@@ -632,7 +632,7 @@ public class BPSQLPanel extends BPCodePanel
 
 		public static SQLCMDTYPE find(String sql)
 		{
-			String usql = sql.toUpperCase();
+			String usql = sql.trim().toUpperCase();
 			for (SQLCMDTYPE ct : SQLCMDTYPE.values())
 			{
 				if (ct.match(usql))
