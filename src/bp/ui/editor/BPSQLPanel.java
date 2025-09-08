@@ -478,8 +478,11 @@ public class BPSQLPanel extends BPCodePanel
 	protected void setStatusInfo(String info)
 	{
 		m_status = info;
-		BPEventUIEditors event = new BPEventUIEditors(BPEventUIEditors.EDITOR_STATUS_CHANGED, m_txt.getID(), this, m_status);
-		BPGUICore.EVENTS_UI.trigger(m_channelid, event);
+		if (m_txt != null)
+		{
+			BPEventUIEditors event = new BPEventUIEditors(BPEventUIEditors.EDITOR_STATUS_CHANGED, m_txt.getID(), this, m_status);
+			BPGUICore.EVENTS_UI.trigger(m_channelid, event);
+		}
 	}
 
 	protected void onCommited(Boolean result, Throwable e)
