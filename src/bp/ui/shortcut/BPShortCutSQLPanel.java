@@ -41,10 +41,14 @@ public class BPShortCutSQLPanel extends BPShortCutBase
 			}
 		}
 		BPResourceJDBCLink plink = link;
-		if (newwin || (!BPGUICore.execOnMainFrame(mf -> mf.isVisible())))
+		if (newwin || (!BPGUICore.checkMainFrameVisible()))
 			CommonUIOperations.createFileNewWindow(filename, "SQL", "SQL Editor", null, plink);
 		else
-			BPGUICore.runOnMainFrame(mf -> mf.createEditorByFileSystem(filename, "SQL", "SQL Editor", null, plink));
+			BPGUICore.runOnMainFrame(mf ->
+			{
+				mf.createEditorByFileSystem(filename, "SQL", "SQL Editor", null, plink);
+				mf.toFront();
+			});
 		return true;
 	}
 

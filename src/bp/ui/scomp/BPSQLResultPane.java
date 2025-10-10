@@ -37,6 +37,7 @@ import bp.ui.table.BPTableFuncsXY;
 import bp.ui.util.CommonUIOperations;
 import bp.ui.util.UIUtil;
 import bp.util.LogicUtil.WeakRefGo;
+import bp.util.ObjUtil;
 import bp.util.Std;
 
 public class BPSQLResultPane extends JPanel
@@ -206,16 +207,7 @@ public class BPSQLResultPane extends JPanel
 		}
 		String t = tr.getMessage();
 		if (Std.getStdMode() >= Std.STDMODE_DEBUG)
-		{
-			StringBuilder sb = new StringBuilder();
-			StackTraceElement[] stes = e.getStackTrace();
-			for (StackTraceElement ste : stes)
-			{
-				sb.append("\n");
-				sb.append("\t" + ste.toString());
-			}
-			t += sb.toString();
-		}
+			t += ObjUtil.joinArray(e.getStackTrace(), "\n\t", ste -> ste.toString(), false);
 		m_txt.setText(t);
 	}
 
