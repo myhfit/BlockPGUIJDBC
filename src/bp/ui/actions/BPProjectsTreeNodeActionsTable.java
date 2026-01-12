@@ -46,7 +46,7 @@ public class BPProjectsTreeNodeActionsTable
 				if (schema.getName() != null && schema.getName().length() > 0)
 					schemaname = (schema + ".");
 				String tablename = schemaname + table.getName();
-				BPGUICore.runOnMainFrame(mf -> mf.createEditorByFileSystem("untitled.sql", "SQL", "SQL Editor", ObjUtil.makeMap("_DEFAULT_VALUE", "SELECT * FROM " + tablename), jdbclink));
+				BPGUICore.runOnCurrentFrame(f -> f.createEditorByFileSystem("untitled.sql", "SQL", "SQL Editor", ObjUtil.makeMap("_DEFAULT_VALUE", "SELECT * FROM " + tablename), jdbclink));
 			}
 		}).mnemonicKey(KeyEvent.VK_Q).getAction();
 		return rc;
