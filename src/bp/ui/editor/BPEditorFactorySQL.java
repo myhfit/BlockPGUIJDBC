@@ -7,8 +7,10 @@ import bp.config.BPSettingItem;
 import bp.data.BPTextContainer;
 import bp.data.BPTextContainerBase;
 import bp.format.BPFormat;
+import bp.format.BPFormatJDBCLink;
 import bp.format.BPFormatSQL;
 import bp.res.BPResource;
+import bp.res.BPResourceFile;
 import bp.res.BPResourceFileSystem;
 import bp.res.BPResourceJDBCLink;
 import bp.util.LogicUtil;
@@ -18,31 +20,50 @@ public class BPEditorFactorySQL implements BPEditorFactory
 {
 	public String[] getFormats()
 	{
-		return new String[] { BPFormatSQL.FORMAT_SQL };
+		return new String[] { BPFormatSQL.FORMAT_SQL, BPFormatJDBCLink.FORMAT_JDBCLINK };
 	}
 
 	public BPEditor<?> createEditor(BPFormat format, BPResource res, BPConfig options, Object... params)
 	{
 		BPSQLPanel rc = new BPSQLPanel();
-		if (params != null && params.length > 0)
-			rc.setContextByJDBCLink((BPResourceJDBCLink) params[0]);
+		if (BPFormatSQL.FORMAT_SQL.equals(format.getName()))
+		{
+			if (params != null && params.length > 0)
+				rc.setContextByJDBCLink((BPResourceJDBCLink) params[0]);
+		}
+		else if (BPFormatJDBCLink.FORMAT_JDBCLINK.equals(format.getName()))
+		{
+			if (res != null)
+			{
+				if (BPResourceJDBCLink.RESTYPE_JDBCLINK.equals(res.getResType()))
+					rc.setContextByJDBCLink((BPResourceJDBCLink) res);
+				else if (res instanceof BPResourceFile && ((BPResourceFile) res).exists())
+				{
+					res = BPResourceJDBCLink.readLink((BPResourceFile) res);
+					rc.setContextByJDBCLink((BPResourceJDBCLink) res);
+				}
+			}
+		}
 		return rc;
 	}
 
 	public void initEditor(BPEditor<?> editor, BPFormat format, BPResource res, BPConfig options)
 	{
-		if (res.isFileSystem() && ((BPResourceFileSystem) res).isFile())
+		if (BPFormatSQL.FORMAT_SQL.equals(format.getName()))
 		{
-			BPTextContainer con = new BPTextContainerBase();
-			if (options != null)
-				LogicUtil.VLF(((String) options.get("encoding")), TextUtil::checkNotEmpty, con::setEncoding);
-			con.bind(res);
-			((BPSQLPanel) editor).bind(con, ((BPResourceFileSystem) res).getTempID() != null);
-			if (options != null)
+			if (res != null && res.isFileSystem() && ((BPResourceFileSystem) res).isFile())
 			{
-				String dv = options.get("_DEFAULT_VALUE");
-				if (dv != null)
-					((BPSQLPanel) editor).getTextPanel().setText(dv);
+				BPTextContainer con = new BPTextContainerBase();
+				if (options != null)
+					LogicUtil.VLF(((String) options.get("encoding")), TextUtil::checkNotEmpty, con::setEncoding);
+				con.bind(res);
+				((BPSQLPanel) editor).bind(con, ((BPResourceFileSystem) res).getTempID() != null);
+				if (options != null)
+				{
+					String dv = options.get("_DEFAULT_VALUE");
+					if (dv != null)
+						((BPSQLPanel) editor).getTextPanel().setText(dv);
+				}
 			}
 		}
 	}

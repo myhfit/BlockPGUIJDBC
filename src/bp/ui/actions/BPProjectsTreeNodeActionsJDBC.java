@@ -20,12 +20,9 @@ public class BPProjectsTreeNodeActionsJDBC
 
 	public BPAction getNewAction(BPTreeComponent<BPTree> tree, BPResourceJDBCLink res, int channelid)
 	{
-		BPAction rc = BPAction.build("New").mnemonicKey(KeyEvent.VK_N).getAction();
+		BPAction rc = BPActionHelpers.getAction(BPActionConstCommon.CTX_MNUNEW, null);
 		BPResourceFileLocal f = new BPResourceFileLocal("untitled.sql");
-		BPAction actneweditor = BPAction.build("SQL Editor").callback((e) ->
-		{
-			BPGUICore.EVENTS_UI.trigger(channelid, BPEventUIPathTree.makeActionEvent(BPPathTreeNodeActions.ACTION_NEWFILEUNSAVED, f, res));
-		}).mnemonicKey(KeyEvent.VK_S).getAction();
+		BPAction actneweditor = BPAction.build("SQL Editor").callback(e -> BPGUICore.EVENTS_UI.trigger(channelid, BPEventUIPathTree.makeActionEvent(BPPathTreeNodeActions.ACTION_NEWFILEUNSAVED, f, res))).mnemonicKey(KeyEvent.VK_S).getAction();
 		rc.putValue(BPAction.SUB_ACTIONS, new Action[] { actneweditor });
 		return rc;
 	}

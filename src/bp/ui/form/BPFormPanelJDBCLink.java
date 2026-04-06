@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+import bp.locale.BPLocaleConstCC;
+import bp.locale.BPLocaleConstCJDBC;
+import bp.locale.BPLocaleHelpers;
 import bp.ui.dialog.BPDialogSelectData;
 import bp.ui.scomp.BPTextField;
 import bp.ui.scomp.BPTextFieldPane;
@@ -47,11 +50,11 @@ public class BPFormPanelJDBCLink extends BPFormPanelResourceBase
 		m_txtuser = makeSingleLineTextField();
 		m_txtpass = makeSingleLineTextField();
 		m_txtdbcats = makeSingleLineTextField();
-		addLine(new String[] { "Driver" }, new Component[] { m_pandriver }, () -> !m_txtdriver.isEmpty());
-		addLine(new String[] { "URL" }, new Component[] { m_txturl }, () -> !m_txturl.isEmpty());
-		addLine(new String[] { "Username" }, new Component[] { m_txtuser });
-		addLine(new String[] { "Password" }, new Component[] { m_txtpass });
-		addLine(new String[] { "DB Categories" }, new Component[] { m_txtdbcats });
+		addLine(new String[] { BPLocaleHelpers.getValue(BPLocaleConstCJDBC.Driver) }, new Component[] { m_pandriver }, () -> !m_txtdriver.isEmpty());
+		addLine(new String[] { BPLocaleHelpers.getValue(BPLocaleConstCJDBC.URL) }, new Component[] { m_txturl }, () -> !m_txturl.isEmpty());
+		addLine(new String[] { BPLocaleHelpers.getValue(BPLocaleConstCC.USER) }, new Component[] { m_txtuser });
+		addLine(new String[] { BPLocaleHelpers.getValue(BPLocaleConstCC.PASSWORD) }, new Component[] { m_txtpass });
+		addLine(new String[] { BPLocaleHelpers.getValue(BPLocaleConstCJDBC.DB_Categories) }, new Component[] { m_txtdbcats });
 	}
 
 	protected String onShowDrivers(String old)
@@ -72,7 +75,7 @@ public class BPFormPanelJDBCLink extends BPFormPanelResourceBase
 		{
 			return d.getClass().getName();
 		}
-		return "";
+		return null;
 	}
 
 	protected String driverToText(Driver d)

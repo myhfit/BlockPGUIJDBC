@@ -28,6 +28,8 @@ import bp.format.BPFormatXYData;
 import bp.jdbc.BPJDBCContext;
 import bp.jdbc.BPJDBCContextBase;
 import bp.jdbc.SQLCMDTYPE;
+import bp.locale.BPLocaleConstCC;
+import bp.locale.BPLocaleHelpers;
 import bp.processor.BPDataProcessor;
 import bp.processor.BPDataProcessorManager;
 import bp.processor.BPResourceProcessor;
@@ -37,10 +39,15 @@ import bp.res.BPResourceFile;
 import bp.res.BPResourceHolder;
 import bp.res.BPResourceJDBCLink;
 import bp.ui.actions.BPAction;
+import bp.ui.actions.BPActionConstCommon;
+import bp.ui.actions.BPActionHelpers;
 import bp.ui.actions.BPSQLActions;
 import bp.ui.container.BPEditors.BPEventUIEditors;
 import bp.ui.dialog.BPDialogCommon;
 import bp.ui.dialog.BPDialogSetting;
+import bp.ui.parallel.BPEventUISyncEditor;
+import bp.ui.parallel.BPSyncGUIController;
+import bp.ui.parallel.BPSyncGUIControllerBase;
 import bp.ui.scomp.BPSQLPane;
 import bp.ui.scomp.BPSQLResultPane;
 import bp.ui.scomp.BPSplitPane;
@@ -64,10 +71,14 @@ public class BPSQLPanel extends BPCodePanel
 	protected BPSQLActions m_actsql;
 	protected BPJDBCContext m_context;
 	protected String m_status;
+	protected BPSyncGUIController m_syncactobj;
 
 	protected BiConsumer<List<BPXData>, Integer> m_adddatafunc;
 	protected Consumer<BPXYDData> m_setupqueryfunc;
 	protected Consumer<BPResourceJDBCLink> m_changeddsfunc;
+
+	public final static String SYNCACTIONNAME_SQLPAN_RUNSQL = "SQLPAN_RUNSQL";
+	public final static String SYNCACTIONNAME_SQLPAN_MISC = "SQLPAN_MISC";
 
 	public BPSQLPanel()
 	{
@@ -92,7 +103,7 @@ public class BPSQLPanel extends BPCodePanel
 		m_sp.setBorder(new EmptyBorder(0, 0, 0, 0));
 		m_sp.setDividerBorderColor(UIConfigs.COLOR_TEXTHALF(), false);
 		m_result = new BPSQLResultPane();
-		m_result.setActions(m_actsql.getActions());
+		m_result.setActions(m_actsql.getActions(), this);
 		m_result.setDSChangeCallback(m_changeddsfunc);
 		m_scroll = new JScrollPane();
 		m_txt = createTextPane();
@@ -108,6 +119,14 @@ public class BPSQLPanel extends BPCodePanel
 		m_sp.togglePanel(false);
 		initActions();
 		initListeners();
+	}
+
+	protected void initListeners()
+	{
+		super.initListeners();
+
+		if (m_syncactobj == null)
+			m_syncactobj = new BPSyncGUIControllerBase(m_syncactcb);
 	}
 
 	protected void initActions()
@@ -133,7 +152,7 @@ public class BPSQLPanel extends BPCodePanel
 		List<Action> acts = ObjUtil.makeList((Object[]) actarr);
 		acts.add(BPAction.separator());
 		{
-			Action actsp = BPAction.build("SQL Processor").getAction();
+			Action actsp = BPAction.build("SQL" + BPActionHelpers.getValue(BPActionConstCommon.TXT_PROCESSOR)).getAction();
 			List<Action> actsub = new ArrayList<Action>();
 			List<BPDataProcessor<?, ?>> ps = BPDataProcessorManager.getDataProcessors(BPFormatSQL.FORMAT_SQL);
 			for (String dbc : dbcats)
@@ -143,7 +162,7 @@ public class BPSQLPanel extends BPCodePanel
 				if (p instanceof BPResourceProcessor)
 				{
 					String pname = p.getName();
-					Action actp = BPAction.build(p.getUILabel()).callback((e) -> callSQLResourceProcessor(pname)).getAction();
+					Action actp = BPAction.build(p.getUILabel()).callback(e -> callSQLResourceProcessor(pname)).getAction();
 					actsub.add(actp);
 				}
 			}
@@ -153,19 +172,26 @@ public class BPSQLPanel extends BPCodePanel
 		m_acts = acts.toArray(new Action[0]);
 	}
 
+	public void setChannelID(int channelid)
+	{
+		super.setChannelID(channelid);
+		if (m_syncactobj != null)
+			m_syncactobj.setChannelID(channelid);
+	}
+
 	protected void callSQLResourceProcessor(String pname)
 	{
+		checkContext();
+		if (m_context == null)
+			return;
 		String str;
-		// boolean issel;
 		if (m_txt.getSelectionEnd() == 0)
 		{
 			str = m_txt.getText();
-			// issel = false;
 		}
 		else
 		{
 			str = m_txt.getSelectedText();
-			// issel = true;
 		}
 		BPResourceHolder src = new BPResourceByteArray(TextUtil.fromString(str, "utf-8"), null, BPFormatText.FORMAT_TEXT, null, null, true);
 		str = null;
@@ -238,7 +264,7 @@ public class BPSQLPanel extends BPCodePanel
 
 	protected void onConnected(Boolean result, Throwable t)
 	{
-		UIUtil.laterUI(() -> setStatusInfo(("Connect " + ((result != null && ((boolean) result == true) ? "Success" : "Failed")))));
+		UIUtil.laterUI(() -> setStatusInfo(("Connect " + ((result != null && ((boolean) result == true) ? BPLocaleHelpers.getValue(BPLocaleConstCC.SUCCESS) : BPLocaleHelpers.getValue(BPLocaleConstCC.FAILED))))));
 		if (t != null)
 		{
 			m_result.setError(t);
@@ -256,7 +282,7 @@ public class BPSQLPanel extends BPCodePanel
 
 	protected void onDisconnected(Boolean result)
 	{
-		UIUtil.laterUI(() -> setStatusInfo(("Disconnect " + ((result != null && ((boolean) result == true) ? "Success" : "Failed")))));
+		UIUtil.laterUI(() -> setStatusInfo(("Disconnect " + ((result != null && ((boolean) result == true) ? BPLocaleHelpers.getValue(BPLocaleConstCC.SUCCESS) : BPLocaleHelpers.getValue(BPLocaleConstCC.FAILED))))));
 	}
 
 	public void showClone(ActionEvent e)
@@ -365,6 +391,20 @@ public class BPSQLPanel extends BPCodePanel
 		{
 			sql = m_txt.getText();
 		}
+		runSQL(sql);
+		onRunSQL(sql);
+	}
+
+	protected void onRunSQL(String sql)
+	{
+		if (m_syncactobj.checkSyncAndNoBlock())
+			m_syncactobj.trigger(BPEventUISyncEditor.syncAction(getID(), SYNCACTIONNAME_SQLPAN_RUNSQL, sql));
+	}
+
+	public void runSQL(String sql)
+	{
+		if (m_context == null)
+			return;
 		if (sql != null)
 		{
 			sql = sql.trim();
@@ -583,6 +623,37 @@ public class BPSQLPanel extends BPCodePanel
 		{
 			m_result.setError(e);
 			setStatusInfo("");
+		}
+	}
+
+	public BPSyncGUIController getSyncActionController()
+	{
+		return m_syncactobj;
+	}
+
+	protected void onSyncEditorAction(BPEventUISyncEditor e)
+	{
+		boolean dealed = false;
+		if (BPEventUISyncEditor.SYNC_ACTION.equals(e.subkey) && !m_txt.getID().equals(e.datas[0]))
+		{
+			String actionname = (String) e.datas[1];
+			if (SYNCACTIONNAME_SQLPAN_RUNSQL.equals(actionname))
+			{
+				String sql = (String) ((Object[]) e.datas[2])[0];
+				if (sql != null && sql.length() > 0)
+					m_syncobj.blockSync(() -> m_syncactobj.blockSync(() -> runSQL(sql)));
+				dealed = true;
+			}
+			else if (SYNCACTIONNAME_SQLPAN_MISC.equals(actionname))
+			{
+				// m_syncobj.blockSync(() -> m_syncactobj.blockSync(() ->
+				// ((BPConsolePane) m_txt).runClear()));
+				dealed = true;
+			}
+		}
+		if (!dealed)
+		{
+			super.onSyncEditorAction(e);
 		}
 	}
 }

@@ -149,9 +149,9 @@ public class BPSQLResultPane extends JPanel
 		m_table.setDefaultRenderer(Object.class, new BPTableRendererCommonObj());
 	}
 
-	public void setActions(Action[] actions)
+	public void setActions(Action[] actions, JComponent accparent)
 	{
-		m_toolbar.setActions(actions);
+		m_toolbar.setActions(actions, accparent);
 		m_toolbar.addGlue();
 		m_toolbar.add(m_lbllinkname);
 	}
