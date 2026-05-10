@@ -29,7 +29,7 @@ import bp.jdbc.BPJDBCContext;
 import bp.jdbc.BPJDBCContextBase;
 import bp.jdbc.SQLCMDTYPE;
 import bp.locale.BPLocaleConstCC;
-import bp.locale.BPLocaleHelpers;
+import bp.locale.BPLocaleConstCJDBC;
 import bp.processor.BPDataProcessor;
 import bp.processor.BPDataProcessorManager;
 import bp.processor.BPResourceProcessor;
@@ -46,8 +46,6 @@ import bp.ui.container.BPEditors.BPEventUIEditors;
 import bp.ui.dialog.BPDialogCommon;
 import bp.ui.dialog.BPDialogSetting;
 import bp.ui.parallel.BPEventUISyncEditor;
-import bp.ui.parallel.BPSyncGUIController;
-import bp.ui.parallel.BPSyncGUIControllerBase;
 import bp.ui.scomp.BPSQLPane;
 import bp.ui.scomp.BPSQLResultPane;
 import bp.ui.scomp.BPSplitPane;
@@ -71,7 +69,6 @@ public class BPSQLPanel extends BPCodePanel
 	protected BPSQLActions m_actsql;
 	protected BPJDBCContext m_context;
 	protected String m_status;
-	protected BPSyncGUIController m_syncactobj;
 
 	protected BiConsumer<List<BPXData>, Integer> m_adddatafunc;
 	protected Consumer<BPXYDData> m_setupqueryfunc;
@@ -125,8 +122,8 @@ public class BPSQLPanel extends BPCodePanel
 	{
 		super.initListeners();
 
-		if (m_syncactobj == null)
-			m_syncactobj = new BPSyncGUIControllerBase(m_syncactcb);
+		if (m_ec.syncaction == null)
+			m_ec.initActionSync((BiConsumer<BPEventUISyncEditor, BPTextPanel>) BPTextPanel::onSyncEditorActionOuter);
 	}
 
 	protected void initActions()
@@ -170,13 +167,6 @@ public class BPSQLPanel extends BPCodePanel
 			acts.add(actsp);
 		}
 		m_acts = acts.toArray(new Action[0]);
-	}
-
-	public void setChannelID(int channelid)
-	{
-		super.setChannelID(channelid);
-		if (m_syncactobj != null)
-			m_syncactobj.setChannelID(channelid);
 	}
 
 	protected void callSQLResourceProcessor(String pname)
@@ -259,12 +249,12 @@ public class BPSQLPanel extends BPCodePanel
 		if (m_context == null)
 			return;
 		m_context.connect().whenComplete(this::onConnected);
-		setStatusInfo("Connecting ...");
+		setStatusInfo(BPLocaleConstCJDBC.Connecting.text() + " ...");
 	}
 
 	protected void onConnected(Boolean result, Throwable t)
 	{
-		UIUtil.laterUI(() -> setStatusInfo(("Connect " + ((result != null && ((boolean) result == true) ? BPLocaleHelpers.getValue(BPLocaleConstCC.SUCCESS) : BPLocaleHelpers.getValue(BPLocaleConstCC.FAILED))))));
+		UIUtil.laterUI(() -> setStatusInfo(BPLocaleConstCJDBC.Connect.text() + " " + ((result != null && ((boolean) result == true) ? BPLocaleConstCC.SUCCESS.text() : BPLocaleConstCC.FAILED.text()))));
 		if (t != null)
 		{
 			m_result.setError(t);
@@ -277,12 +267,12 @@ public class BPSQLPanel extends BPCodePanel
 		if (m_context == null)
 			return;
 		m_context.disconnect().thenAccept(this::onDisconnected);
-		setStatusInfo("Disconnecting ...");
+		setStatusInfo(BPLocaleConstCJDBC.Disconnecting.text() + " ...");
 	}
 
 	protected void onDisconnected(Boolean result)
 	{
-		UIUtil.laterUI(() -> setStatusInfo(("Disconnect " + ((result != null && ((boolean) result == true) ? BPLocaleHelpers.getValue(BPLocaleConstCC.SUCCESS) : BPLocaleHelpers.getValue(BPLocaleConstCC.FAILED))))));
+		UIUtil.laterUI(() -> setStatusInfo(BPLocaleConstCJDBC.Disconnect.text() + " " + ((result != null && ((boolean) result == true) ? BPLocaleConstCC.SUCCESS.text() : BPLocaleConstCC.FAILED.text()))));
 	}
 
 	public void showClone(ActionEvent e)
@@ -331,16 +321,22 @@ public class BPSQLPanel extends BPCodePanel
 				if (ct == null)
 				{
 					List<String> rct = new ArrayList<String>();
-					rct.add("Query");
-					rct.add("Execute");
+					rct.add(BPLocaleConstCJDBC.Query.text());
+					rct.add(BPLocaleConstCJDBC.Execute.text());
 					String s = UIStd.select(rct, "Select Command Type", null);
-					if ("Execute".equals(s))
+					int vi=s!=null?rct.indexOf(s):-1;
+					switch(vi)
 					{
-						ct = SQLCMDTYPE.EXECUTE;
-					}
-					else if ("Query".equals(s))
-					{
-						ct = SQLCMDTYPE.QUERY;
+						case 0:
+						{
+							ct = SQLCMDTYPE.QUERY;
+							break;
+						}
+						case 1:
+						{
+							ct = SQLCMDTYPE.EXECUTE;
+							break;
+						}
 					}
 				}
 				if (ct != null)
@@ -350,7 +346,7 @@ public class BPSQLPanel extends BPCodePanel
 						case QUERY:
 						{
 							m_context.startQuery(sql, plist.toArray(new Object[plist.size()]), m_setupqueryfunc).whenComplete(this::onQueried);
-							setStatusInfo("Query Started ...");
+							setStatusInfo(BPLocaleConstCJDBC.Query.text() + " " + BPLocaleConstCC.STARTED.text() + " ...");
 							break;
 						}
 						case EXECUTE:
@@ -358,7 +354,7 @@ public class BPSQLPanel extends BPCodePanel
 						case DEFINITION:
 						{
 							m_context.execute(sql, plist.toArray(new Object[plist.size()])).whenComplete(this::onExecuted);
-							setStatusInfo("Execute Started ...");
+							setStatusInfo(BPLocaleConstCJDBC.Execute.text() + " " + BPLocaleConstCC.STARTED.text() + " ...");
 							break;
 						}
 						case COMMIT:
@@ -397,8 +393,8 @@ public class BPSQLPanel extends BPCodePanel
 
 	protected void onRunSQL(String sql)
 	{
-		if (m_syncactobj.checkSyncAndNoBlock())
-			m_syncactobj.trigger(BPEventUISyncEditor.syncAction(getID(), SYNCACTIONNAME_SQLPAN_RUNSQL, sql));
+		if (m_ec.syncaction.checkSyncAndNoBlock())
+			m_ec.syncaction.trigger(BPEventUISyncEditor.syncAction(getID(), SYNCACTIONNAME_SQLPAN_RUNSQL, sql));
 	}
 
 	public void runSQL(String sql)
@@ -414,16 +410,22 @@ public class BPSQLPanel extends BPCodePanel
 				if (ct == null)
 				{
 					List<String> rct = new ArrayList<String>();
-					rct.add("Query");
-					rct.add("Execute");
+					rct.add(BPLocaleConstCJDBC.Query.text());
+					rct.add(BPLocaleConstCJDBC.Execute.text());
 					String s = UIStd.select(rct, "Select Command Type", null);
-					if ("Execute".equals(s))
+					int vi = s != null ? rct.indexOf(s) : -1;
+					switch (vi)
 					{
-						ct = SQLCMDTYPE.EXECUTE;
-					}
-					else if ("Query".equals(s))
-					{
-						ct = SQLCMDTYPE.QUERY;
+						case 0:
+						{
+							ct = SQLCMDTYPE.QUERY;
+							break;
+						}
+						case 1:
+						{
+							ct = SQLCMDTYPE.EXECUTE;
+							break;
+						}
 					}
 				}
 				if (ct != null)
@@ -433,7 +435,7 @@ public class BPSQLPanel extends BPCodePanel
 						case QUERY:
 						{
 							m_context.startQuery(sql, new Object[] {}, m_setupqueryfunc).whenComplete(this::onQueried);
-							setStatusInfo("Query Started ...");
+							setStatusInfo(BPLocaleConstCJDBC.Query.text() + " " + BPLocaleConstCC.STARTED.text() + " ...");
 							break;
 						}
 						case EXECUTE:
@@ -441,7 +443,7 @@ public class BPSQLPanel extends BPCodePanel
 						case DEFINITION:
 						{
 							m_context.execute(sql, new Object[] {}).whenComplete(this::onExecuted);
-							setStatusInfo("Execute Started ...");
+							setStatusInfo(BPLocaleConstCJDBC.Execute.text() + " " + BPLocaleConstCC.STARTED.text() + " ...");
 							break;
 						}
 						case COMMIT:
@@ -467,13 +469,13 @@ public class BPSQLPanel extends BPCodePanel
 	public void commit()
 	{
 		m_context.commit().whenComplete(this::onCommited);
-		setStatusInfo("Commit Started ...");
+		setStatusInfo(BPLocaleConstCJDBC.Commit.text() + " " + BPLocaleConstCC.STARTED.text() + " ...");
 	}
 
 	public void rollback()
 	{
 		m_context.rollback().whenComplete(this::onRollbacked);
-		setStatusInfo("Rollback Started ...");
+		setStatusInfo(BPLocaleConstCJDBC.Rollback.text() + " " + BPLocaleConstCC.STARTED.text() + " ...");
 	}
 
 	protected void onQuerySetup(BPXYDData xydata)
@@ -482,7 +484,7 @@ public class BPSQLPanel extends BPCodePanel
 		final BPXYData datas = new BPXYData.BPXYDataList(xydata, true);
 		UIUtil.laterUI(() ->
 		{
-			setStatusInfo("Fetching ...");
+			setStatusInfo(BPLocaleConstCJDBC.Fetching.text() + " ...");
 			m_result.setXYData(datas);
 		});
 	}
@@ -583,10 +585,7 @@ public class BPSQLPanel extends BPCodePanel
 	protected void onResumeSetup(BPXYDData xydata)
 	{
 		xydata.setDataListener(new WeakReference<BiConsumer<List<BPXData>, Integer>>(m_adddatafunc), null, null);
-		UIUtil.laterUI(() ->
-		{
-			setStatusInfo("Fetching ...");
-		});
+		UIUtil.laterUI(() -> setStatusInfo(BPLocaleConstCJDBC.Fetching.text() + " ..."));
 	}
 
 	public void clearResource()
@@ -611,7 +610,7 @@ public class BPSQLPanel extends BPCodePanel
 			{
 				if (xydata != null)
 				{
-					setStatusInfo("Query Ended");
+					setStatusInfo(BPLocaleConstCJDBC.Query.text() + " " + BPLocaleConstCC.ENDED.text());
 					xydata.close();
 				}
 			}
@@ -626,11 +625,6 @@ public class BPSQLPanel extends BPCodePanel
 		}
 	}
 
-	public BPSyncGUIController getSyncActionController()
-	{
-		return m_syncactobj;
-	}
-
 	protected void onSyncEditorAction(BPEventUISyncEditor e)
 	{
 		boolean dealed = false;
@@ -641,7 +635,7 @@ public class BPSQLPanel extends BPCodePanel
 			{
 				String sql = (String) ((Object[]) e.datas[2])[0];
 				if (sql != null && sql.length() > 0)
-					m_syncobj.blockSync(() -> m_syncactobj.blockSync(() -> runSQL(sql)));
+					m_ec.syncstatus.blockSync(() -> m_ec.syncaction.blockSync(() -> runSQL(sql)));
 				dealed = true;
 			}
 			else if (SYNCACTIONNAME_SQLPAN_MISC.equals(actionname))

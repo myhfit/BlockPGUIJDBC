@@ -17,11 +17,12 @@ import bp.data.BPXYData;
 import bp.jdbc.BPJDBCContextBase;
 import bp.project.BPResourceProject;
 import bp.project.BPResourceProjectJDBC;
+import bp.res.BPResource;
 import bp.res.BPResourceDir;
 import bp.res.BPResourceJDBCLink;
 import bp.ui.dialog.BPDialogBlock;
-import bp.ui.dialog.BPDialogSelectResource2;
-import bp.ui.dialog.BPDialogSelectResource2.SELECTSCOPE;
+import bp.ui.dialog.BPDialogSelectResource.SELECTSCOPE;
+import bp.ui.util.CommonUIOperations;
 import bp.ui.util.UIStd;
 import bp.ui.util.UIUtil;
 
@@ -73,29 +74,26 @@ public class BPDataActionFactoryJDBC implements BPDataActionFactory
 		return sb.toString();
 	}
 
+	private final static boolean filterJDBCResource(BPResource res)
+	{
+		if (res instanceof BPResourceProject)
+		{
+			return res instanceof BPResourceProjectJDBC;
+		}
+		else if (res.isProjectResource())
+		{
+			return res instanceof BPResourceJDBCLink;
+		}
+		else if (res instanceof BPResourceDir)
+		{
+			return true;
+		}
+		return false;
+	}
+
 	private final static void cloneXYDataToTable(BPXYData xydata, ActionEvent event)
 	{
-		BPDialogSelectResource2 dlg = new BPDialogSelectResource2();
-		dlg.setTargetFilter((res) -> res instanceof BPResourceJDBCLink);
-		dlg.setScope(SELECTSCOPE.PROJECT);
-		dlg.setFilter((res) ->
-		{
-			if (res instanceof BPResourceProject)
-			{
-				return res instanceof BPResourceProjectJDBC;
-			}
-			else if (res.isProjectResource())
-			{
-				return res instanceof BPResourceJDBCLink;
-			}
-			else if (res instanceof BPResourceDir)
-			{
-				return true;
-			}
-			return false;
-		});
-		dlg.showOpen();
-		BPResourceJDBCLink link = (BPResourceJDBCLink) dlg.getSelectedResource();
+		BPResourceJDBCLink link = (BPResourceJDBCLink) CommonUIOperations.showSelectResource(null, cb -> cb.setTargetFilter(res -> res instanceof BPResourceJDBCLink).setScope(SELECTSCOPE.PROJECT).setFilter(BPDataActionFactoryJDBC::filterJDBCResource));
 		if (link == null)
 			return;
 		String sql = genSQL(xydata);
