@@ -43,7 +43,6 @@ import bp.ui.actions.BPActionConstCommon;
 import bp.ui.actions.BPActionHelpers;
 import bp.ui.actions.BPSQLActions;
 import bp.ui.container.BPEditors.BPEventUIEditors;
-import bp.ui.dialog.BPDialogCommon;
 import bp.ui.dialog.BPDialogSetting;
 import bp.ui.parallel.BPEventUISyncEditor;
 import bp.ui.scomp.BPSQLPane;
@@ -198,12 +197,9 @@ public class BPSQLPanel extends BPCodePanel
 			}
 			if (p.needSettingUI())
 			{
-				BPDialogSetting dlg = new BPDialogSetting();
-				dlg.setSetting(setting);
-				dlg.setVisible(true);
-				if (dlg.getActionResult() != BPDialogCommon.COMMAND_OK)
-					return;
-				setting = dlg.getResult();
+				BPSetting newsetting = BPDialogSetting.showSetting(setting);
+				if (newsetting != null)
+					setting = newsetting;
 			}
 			setting.set("jdbclink", m_context.getJDBCLink());
 		}
