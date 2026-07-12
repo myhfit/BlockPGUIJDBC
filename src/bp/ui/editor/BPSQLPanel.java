@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -22,6 +23,7 @@ import bp.config.UIConfigs;
 import bp.data.BPXData;
 import bp.data.BPXYDData;
 import bp.data.BPXYData;
+import bp.env.BPEnv;
 import bp.format.BPFormatSQL;
 import bp.format.BPFormatText;
 import bp.format.BPFormatXYData;
@@ -40,9 +42,11 @@ import bp.res.BPResourceHolder;
 import bp.res.BPResourceJDBCLink;
 import bp.ui.actions.BPAction;
 import bp.ui.actions.BPActionConstCommon;
+import bp.ui.actions.BPActionConstJDBC;
 import bp.ui.actions.BPActionHelpers;
 import bp.ui.actions.BPSQLActions;
 import bp.ui.container.BPEditors.BPEventUIEditors;
+import bp.ui.dialog.BPDialogForm;
 import bp.ui.dialog.BPDialogSetting;
 import bp.ui.parallel.BPEventUISyncEditor;
 import bp.ui.scomp.BPSQLPane;
@@ -109,10 +113,9 @@ public class BPSQLPanel extends BPCodePanel
 		setLayout(new BorderLayout());
 		m_sp.setLeftComponent(m_scroll);
 		m_sp.setRightComponent(m_result);
-		m_sp.setReservedSize((int) (200 * UIConfigs.UI_SCALE()) - 1);
+		m_sp.setDividerRatio(0.7d);
 		add(m_sp, BorderLayout.CENTER);
 
-		m_sp.togglePanel(false);
 		initActions();
 		initListeners();
 	}
@@ -274,6 +277,14 @@ public class BPSQLPanel extends BPCodePanel
 	public void showClone(ActionEvent e)
 	{
 		m_result.showClone(e);
+	}
+	
+	public void updateEnv(ActionEvent e)
+	{
+		BPEnv env = m_context.getEnv();
+		Map<String, Object> r = BPDialogForm.showEdit(env, this.getFocusCycleRootAncestor());
+		if (r != null)
+			env.setMappedData(r);
 	}
 
 	protected void checkContext()
@@ -543,7 +554,7 @@ public class BPSQLPanel extends BPCodePanel
 			{
 				if (xydata != null)
 				{
-					setStatusInfo("Stop On Page ...");
+					setStatusInfo(BPActionConstJDBC.TXT_STOPONPAGE.text() + " ...");
 					xydata.close();
 				}
 			}
@@ -645,5 +656,18 @@ public class BPSQLPanel extends BPCodePanel
 		{
 			super.onSyncEditorAction(e);
 		}
+	}
+
+	public void toggleBottomPanel(Boolean v)
+	{
+		if (v == null)
+			m_sp.toggleRatioLevel3(0.2f, 0.7f, 0.9f, 0.1f, 0.7f);
+		else
+			m_result.setVisible(v);
+	}
+
+	public void toggleRightPanel(Boolean v)
+	{
+		m_result.togglePreviewPanel(v);
 	}
 }
