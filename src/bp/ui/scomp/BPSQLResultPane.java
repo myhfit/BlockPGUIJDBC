@@ -330,7 +330,9 @@ public class BPSQLResultPane extends JPanel
 	public void clearResource()
 	{
 		m_table.clearResource();
-		m_funcs.clear();
+		BPTableFuncsXY funcs = m_funcs;
+		if (funcs != null)
+			funcs.clear();
 		m_scroll.setRowHeaderView(null);
 		m_scroll.setViewportView(null);
 		removeAll();
